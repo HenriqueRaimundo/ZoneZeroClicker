@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clicker</title>
+  <link rel="stylesheet" href="style.css?v=5">
+</head>
+<body>
+<div id="jogo">
+
+  <!-- esquerda: idle -->
+  <section class="coluna">
+    <header class="topo">
+      <span>dinheiros: <b id="dinheiro">0</b></span>
+      <span>premium: <b id="premium">0</b></span>
+    </header>
+    <main class="centro">
+      <div id="fairy"></div>
+    </main>
+    <footer class="fundo">
+      <h4>rendimento idle</h4>
+      <ul id="listaIdle"></ul>
+    </footer>
+    <div id="bloqueio">bloqueado<br>compra o idle na loja</div>
+  </section>
+
+  <!-- centro: combate -->
+  <section class="coluna">
+    <header class="topo" id="zonas"></header>
+    <main class="centro">
+      <div id="infoInimigo"></div>
+      <div id="barraVida"><div id="vida"></div><span id="textoVida"></span></div>
+      <div id="inimigo"></div>
+      <div id="timerBoss"></div>
+      <button id="btnBoss"></button>
+    </main>
+    <footer class="fundo"><h4>raids</h4><p>em breve</p></footer>
+  </section>
+
+  <!-- direita: lojas -->
+  <section class="coluna">
+    <header class="topo" id="abas"></header>
+    <main class="loja" id="loja"></main>
+  </section>
+
+</div>
+<button id="btnReset">reiniciar (teste)</button>
+<script src="js/utils.js?v=5"></script>
+<script src="js/dados.js?v=5"></script>
+<script src="js/estado.js?v=5"></script>
+<script src="js/combate.js?v=5"></script>
+<script src="js/zonas.js?v=5"></script>
+<script src="js/gabling.js?v=5"></script>
+<script src="js/loja.js?v=5"></script>
+<script src="js/idle.js?v=5"></script>
+<script src="js/main.js?v=5"></script>
+</body>
+</html>
