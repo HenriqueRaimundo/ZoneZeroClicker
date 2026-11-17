@@ -1,5 +1,4 @@
 // funcoes pequenas que sao usadas em todo o lado
-
 const sufixos = ["", "K", "M", "B", "T", "Qa", "Qi"];
 
 // 1500 -> 1.50K, 2000000 -> 2.00M
