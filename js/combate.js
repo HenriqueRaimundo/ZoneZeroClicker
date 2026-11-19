@@ -1,39 +1,88 @@
 // inimigos, cliques e boss
-function novoInimigo(boss = false) {
-  const z = zonas[state.zonaAtual];
-  const elite = !boss && Math.random() < 0.1;
-  const tipo = boss ? "boss" : elite ? "elite" : "normal";
-  // a vida sobe sempre: 10, 20, 30...
-  const vida = boss ? vidaBoss() : Math.ceil(VIDA_BASE * (state.mortes + 1) * z.multVida * (elite ? 2 : 1));
-  inimigo = { tipo, vidaMax: vida, vida, timer: boss ? (state.tempoBoss + getBangboo()?.tempoBoss || 0) : null };
-  $("inimigo").className = tipo;
+
+// ================= criar e desenhar inimigos =================
+
+// vida do boss: igual a de um inimigo normal mas x5
+const vidaBoss = () => Math.ceil(VIDA_BASE * (state.mortes + 1) * zonas[state.zonaAtual].multVida * 5);
+
+function novoInimigo(ehBoss = false) {
+  const zona = zonas[state.zonaAtual];
+  const ehElite = !ehBoss && Math.random() < 0.1; // 10% de chance de ser elite
+  const tipo = ehBoss ? "boss" : ehElite ? "elite" : "normal";
+
+  // a vida sobe sempre: 10, 20, 30... (usa o numero de mortes), o elite tem o dobro
+  const vida = ehBoss
+    ? vidaBoss()
+    : Math.ceil(VIDA_BASE * (state.mortes + 1) * zona.multVida * (ehElite ? 2 : 1));
+
+  // so o boss tem timer (segundos para o matar), o bangboo pode dar tempo extra
+  const tempoExtraBangboo = getBangboo()?.tempoBoss || 0;
+  const timer = ehBoss ? state.tempoBoss + tempoExtraBangboo : null;
+
+  inimigo = { tipo, vidaMax: vida, vida, timer };
+  porId("inimigo").className = tipo;
   desenharInimigo();
 }
 
 function desenharInimigo() {
-  $("vida").style.width = (inimigo.vida / inimigo.vidaMax * 100) + "%";
-  $("textoVida").textContent = fmt(inimigo.vida) + "/" + fmt(inimigo.vidaMax);
-  $("infoInimigo").textContent = inimigo.tipo;
-  if (inimigo.timer === null) $("timerBoss").textContent = "";
+  porId("vida").style.width = (inimigo.vida / inimigo.vidaMax * 100) + "%";
+  porId("textoVida").textContent = formatarNumero(inimigo.vida) + "/" + formatarNumero(inimigo.vidaMax);
+  porId("infoInimigo").textContent = inimigo.tipo;
+  if (inimigo.timer === null) porId("timerBoss").textContent = "";
 }
 
+// ================= dano, dinheiro e critico =================
+
+// tira vida ao inimigo e devolve o dano que foi realmente causado
+function aplicarDano(danoBase) {
+  const danoTotal = danoBase * state.multClique * (1 + (getBangboo()?.dano || 0));
+  inimigo.vida = Math.max(0, inimigo.vida - danoTotal);
+
+  if (inimigo.vida <= 0) {
+    matar();
+  } else {
+    desenharInimigo();
+  }
+
+  return danoTotal;
+}
+
+// cada ataque da dinheiro, e o dinheiro depende da zona onde estas
+function darDinheiroPorAtaque(danoBase) {
+  const zona = zonas[state.zonaAtual];
+  state.dinheiro += danoBase * state.multClique * zona.multDinheiro;;
+}
+
+// devolve o multiplicador de dano: 2 se foi critico, 1 se nao foi
+// (para saber SE foi critico usa multiplicador > 1, porque 1 tambem conta como "verdadeiro")
+function processarCritico() {
+  const critico = Math.random() < (state.crit + (getBangboo()?.crit || 0)) ? 2 : 1;
+  return critico;
+}
+
+// ================= matar inimigos =================
+
 function matar() {
-  const z = zonas[state.zonaAtual];
-  const r = $("inimigo").getBoundingClientRect();
-  const cx = r.left + r.width / 2;
+  const zona = zonas[state.zonaAtual];
+  const retangulo = porId("inimigo").getBoundingClientRect();
+  const centroX = retangulo.left + retangulo.width / 2;
 
-  // dinheiro extra (boss da o dobro)
-  const bonus = Math.floor(inimigo.vidaMax * (inimigo.tipo === "boss" ? 1 : 0.5) * z.multDinheiro);
-  state.dinheiro += bonus;
-  flutuante("+" + fmt(bonus), cx, r.top, "#a60");
+  // dinheiro extra ao matar (o boss da o dobro dos outros)
+  const recompensa = Math.floor(inimigo.vidaMax * (inimigo.tipo === "boss" ? 1 : 0.5) * zona.multDinheiro);
+  state.dinheiro += recompensa;
+  flutuante("+" + formatarNumero(recompensa), centroX, retangulo.top, "#a60");
 
-  // drop de premium
+  // drop de premium: o boss da sempre, o elite tem 5x mais chance
   const dropPremium = state.dropPremium + (getBangboo()?.dropPremium || 0);
-  const chance = inimigo.tipo === "boss" ? 1 : inimigo.tipo === "elite" ? dropPremium * 5 : dropPremium;
-  if (Math.random() < chance) {
-    const p = inimigo.tipo === "boss" ? 3 : 1;
-    state.premium += p;
-    flutuante("+" + p + " premium", cx, r.top - 20, "#06c");
+  const chanceDrop = inimigo.tipo === "boss" ? 1 : inimigo.tipo === "elite" ? dropPremium * 5 : dropPremium;
+
+  if (Math.random() < chanceDrop) {
+    const premiosGanhos = inimigo.tipo === "boss" ? 3 : 1;
+    state.premium += premiosGanhos;
+    flutuante("+" + premiosGanhos + " premium", centroX, retangulo.top - 20, "#06c");
+    if (inimigo.tipo === "normal") {
+      state.stats.premiumNormal = true;
+    }
   }
 
   // matar o boss desbloqueia a proxima zona (falta pagar)
@@ -41,100 +90,128 @@ function matar() {
     state.bossesDerrotados.push(state.zonaAtual);
   }
   state.mortes++;
+
+  // contadores para as conquistas (tem de ser antes do novoInimigo, que substitui o inimigo)
+  const estatisticas = state.stats;
+  estatisticas.inimigos++;
+  if (inimigo.tipo === "elite") {
+    estatisticas.elites++;
+  }
+  estatisticas.maiorVida = Math.max(estatisticas.maiorVida, inimigo.vidaMax);
+
+  if (inimigo.tipo === "boss") {
+    estatisticas.seqBoss++;
+    estatisticas.melhorSeqBoss = Math.max(estatisticas.melhorSeqBoss, estatisticas.seqBoss);
+    if (inimigo.timer < 5) {
+      estatisticas.bossApertado = true;
+    }
+  }
+
   novoInimigo();
   desenharZonas();
 }
 
-const vidaBoss = () => Math.ceil(VIDA_BASE * (state.mortes + 1) * zonas[state.zonaAtual].multVida * 5);
+// ================= boss =================
 
+// o boss custa uma parte do custo da proxima zona
 function custoBoss() {
-  const proxima = zonas[state.zonaAtual + 1];
+  const proximaZona = zonas[state.zonaAtual + 1];
   // na ultima zona nao ha proxima, usa o custo dela x10
-  const ref = proxima ? proxima.custo : zonas[state.zonaAtual].custo * 10;
-  return Math.floor(ref * CUSTO_BOSS);
+  const custoReferencia = proximaZona ? proximaZona.custo : zonas[state.zonaAtual].custo * 10;
+  return Math.floor(custoReferencia * CUSTO_BOSS);
 }
 
 function lutarBoss() {
   if (inimigo.tipo === "boss" || state.dinheiro < custoBoss()) return;
+
   state.dinheiro -= custoBoss();
   novoInimigo(true);
   desenharZonas();
 }
 
-$("btnBoss").addEventListener("click", lutarBoss);
+porId("btnBoss").addEventListener("click", lutarBoss);
 
 function falhouBoss() {
   const perda = Math.floor(state.dinheiro * PERDA_BOSS);
   state.dinheiro -= perda;
-  const r = $("inimigo").getBoundingClientRect();
-  flutuante("-" + fmt(perda), r.left + r.width / 2, r.top, "#c00");
+  
+  const retangulo = porId("inimigo").getBoundingClientRect();
+  flutuante("-" + formatarNumero(perda), retangulo.left + retangulo.width / 2, retangulo.top, "#c00");
+
+  state.stats.bossesFalhados++;
+  state.stats.seqBoss = 0; // falhar acaba a sequencia de bosses
+
   novoInimigo();
   desenharZonas();
 }
 
 // texto e estado do botao do boss
 function atualizarBotaoBoss() {
-  const emBoss = inimigo.tipo === "boss";
-  $("btnBoss").textContent = emBoss ? "a lutar com o boss..." : "lutar com o boss (" + fmt(custoBoss()) + ")";
-  $("btnBoss").disabled = emBoss || state.dinheiro < custoBoss();
+  const aLutarComBoss = inimigo.tipo === "boss";
+  porId("btnBoss").textContent = aLutarComBoss ? "a lutar com o boss..." : "lutar com o boss (" + formatarNumero(custoBoss()) + ")";
+  porId("btnBoss").disabled = aLutarComBoss || state.dinheiro < custoBoss();
 }
 
-function dano(valor) {
-  const danoTotal = valor * state.multClique * (1 + (getBangboo()?.dano || 0));
-  inimigo.vida = Math.max(0, inimigo.vida - danoTotal);
-  if (inimigo.vida <= 0) matar(); else desenharInimigo();
-  return danoTotal;
-}
-
-function processarDinheiro(danoBase) {
-  const zonaAtual = zonas[state.zonaAtual];
-  const ganho = danoBase * state.multClique * zonaAtual.multDinheiro;
-  state.dinheiro += ganho;
-}
-
-function processarCritico() {
-  const critico = Math.random() < (state.crit + (getBangboo()?.crit || 0));
-  return critico ? 2 : 1;
-}
+// ================= ataques do jogador =================
 
 // clicar no inimigo: da dinheiro e dano
-$("inimigo").addEventListener("click", e => {
-  const critico = processarCritico();
-  const danoBase = state.danoClique * critico;
-  processarDinheiro(danoBase)
+porId("inimigo").addEventListener("click", evento => {
+  const multiplicadorCritico = processarCritico();
+  const foiCritico = multiplicadorCritico > 1;
+  const danoBase = state.danoClique * multiplicadorCritico;
 
-  flutuante((critico ? "crit " : "") + "-" + fmt(dano(danoBase)),
-  e.clientX + Math.random() * 40 - 20, 
-  e.clientY - 10, 
-  critico ? "#c00" : "#000");
+  darDinheiroPorAtaque(danoBase);
+  const danoCausado = aplicarDano(danoBase); // so uma vez, senao o dano era aplicado a dobrar
+  
+  flutuante(
+  (foiCritico ? "crit " : "") + "-" + formatarNumero(danoCausado),
+  evento.clientX + Math.random() * 40 - 20, 
+  evento.clientY - 10, 
+  foiCritico ? "#c00" : "#000"
+  );
 
-  dano(danoBase);
+  // contadores para as conquistas
+  const estatisticas = state.stats;
+  estatisticas.cliques++;
+  if (foiCritico) {
+    estatisticas.criticos++;
+    estatisticas.seqCrit++;
+    estatisticas.melhorSeqCrit = Math.max(estatisticas.melhorSeqCrit, estatisticas.seqCrit);
+  } else {
+    estatisticas.seqCrit = 0;
+  }
 });
 
-let timerId = null;
+// o personagem atual ataca sozinho de X em X milissegundos (a speed dele, reduzida pelo bangboo)
+let idIntervaloAtaque = null; // guarda o setInterval para o conseguirmos reiniciar
+
 function idleDamageEnemies() {
   const personagem = getPersonagem();
 
   if (!personagem || personagem.id === "default" || personagem.speed <= 0) return;
 
-  if (timerId) {
-    clearInterval(timerId);
+  // se ja havia um ataque automatico a correr (ex: trocar de personagem), para-o primeiro
+  if (idIntervaloAtaque) {
+    clearInterval(idIntervaloAtaque);
   }
 
-  const elementoInimigo = document.getElementById("inimigo");
-  const rect = elementoInimigo.getBoundingClientRect();
+  const retangulo = document.getElementById("inimigo").getBoundingClientRect();
+  const intervaloMs = personagem.speed / (1 + (getBangboo()?.velocidade || 0));
 
-  timerId = setInterval(() => {
-      const critico = processarCritico();
-      const danoBase = personagem.dano * critico;
-      processarDinheiro(danoBase);
+  idIntervaloAtaque = setInterval(() => {
+      const multiplicadorCritico = processarCritico();
+      const foiCritico = multiplicadorCritico > 1;
+      const danoBase = personagem.dano * multiplicadorCritico;
 
-      flutuante((critico ? "crit " : "") + "-" + fmt(dano(danoBase)),
-      rect.left + (rect.width / 2),
-      rect.top,
-      critico ? "#c00" : "#000");
-
-      dano(danoBase);
-    }, personagem.speed / (1 + (getBangboo()?.speed || 0))
+      darDinheiroPorAtaque(danoBase);
+      const danoCausado = aplicarDano(danoBase);
+      
+      flutuante(
+        (foiCritico ? "crit " : "") + "-" + formatarNumero(danoCausado),
+        retangulo.left + (retangulo.width / 2),
+        retangulo.top,
+        foiCritico ? "#c00" : "#000"
+      );
+    }, intervaloMs
   );
 }

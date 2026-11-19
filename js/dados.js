@@ -1,7 +1,12 @@
+// ---------- constantes de balanceamento ----------
+
 const VIDA_BASE = 10;    // vida do 1o inimigo, depois vai 2x, 3x, 4x...
 const CUSTO_BOSS = 0.5;  // boss custa isto vezes o custo da proxima zona
 const PERDA_BOSS = 0.15; // % do dinheiro que se perde se falhar o boss
 const CUSTO_IDLE = 150;  // preco para desbloquear o idle
+const CUSTO_GAMBLE = 10; // premium gasto em cada roll (personagens e bangboos)
+
+// ---------- zonas ----------
 
 const zonas = [
   { nome: "Zona 1", multDinheiro: 1,  multVida: 1,    custo: 0 },
@@ -12,18 +17,26 @@ const zonas = [
   { nome: "Zona 6", multDinheiro: 32, multVida: 1000, custo: 8000000 },
 ];
 
+// ---------- upgrades da loja ----------
+// base = preco do 1o nivel, cresc = quanto o preco multiplica a cada nivel comprado
+// max = limite de niveis (se nao tiver, e infinito)
 // os que tem idle igual a true so aparecem depois de comprar o idle
+// efeito = o que acontece ao estado quando se compra um nivel
+
 const upgrades = [
-  { id: "dano",     nome: "dano do clique",      desc: "+1 de dano e dinheiro por clique", base: 20,  cresc: 1.25, efeito: s => s.danoClique += 1 },
-  { id: "multC",    nome: "dano e dinheiro por clique", desc: "+25% de dano e dinheiro por clique", base: 120, cresc: 1.4,  efeito: s => s.multClique += 0.25 },
-  { id: "crit",     nome: "chance de critico",   desc: "+2% de chance (dano x2)",          base: 200, cresc: 1.5,  max: 20, efeito: s => s.crit += 0.02 },
-  { id: "tempo",    nome: "tempo do boss",       desc: "+3 segundos",                      base: 250, cresc: 1.6,  max: 10, efeito: s => s.tempoBoss += 3 },
-  { id: "drop",     nome: "drop de premium",     desc: "+0.5% de chance nos normais",      base: 600, cresc: 1.8,  max: 10, efeito: s => s.dropPremium += 0.005 },
-  { id: "idle1",    nome: "idle da fairy",       desc: "+1 por segundo",                   base: 40,  cresc: 1.2,  idle: true, efeito: s => s.idleBase += 1 },
-  { id: "idleMult", nome: "multiplicador idle",  desc: "+20% de idle",                     base: 300, cresc: 1.5,  idle: true, efeito: s => s.multIdle += 0.2 },
+  { id: "dano",     nome: "dano do clique",             desc: "+1 de dano e dinheiro por clique",      base: 20,  cresc: 1.25, efeito: estado => estado.danoClique += 1 },
+  { id: "multC",    nome: "dano e dinheiro por clique", desc: "+25% de dano e dinheiro por clique",    base: 120, cresc: 1.4,  efeito: estado => estado.multClique += 0.25 },
+  { id: "crit",     nome: "chance de critico",          desc: "+2% de chance (dano x2)",               base: 200, cresc: 1.5,  max: 20, efeito: estado => estado.crit += 0.02 },
+  { id: "tempo",    nome: "tempo do boss",              desc: "+3 segundos",                           base: 250, cresc: 1.6,  max: 10, efeito: estado => estado.tempoBoss += 3 },
+  { id: "drop",     nome: "drop de premium",            desc: "+0.5% de chance nos normais",           base: 600, cresc: 1.8,  max: 10, efeito: estado => estado.dropPremium += 0.005 },
+  { id: "idle1",    nome: "idle da fairy",              desc: "+1 por segundo",                        base: 40,  cresc: 1.2,  idle: true, efeito: estado => estado.idleBase += 1 },
+  { id: "idleMult", nome: "multiplicador idle",         desc: "+20% de idle",                          base: 300, cresc: 1.5,  idle: true, efeito: estado => estado.multIdle += 0.2 },
 ];
 
-//speed de personagens e feita em milissegundos
+// ---------- personagens ----------
+// speed e o intervalo entre ataques em milissegundos (menor = mais rapido)
+// se o personagem esta desbloqueado ou nao fica no state (personagensDesbloqueados)
+
 const personagens = [
   // ---- Tier 4 -> comum ----
   { id: "billy", nome: "Billy", dano: 1, speed: 500, img: "", raridade: "comum" },
@@ -34,30 +47,30 @@ const personagens = [
   { id: "anton", nome: "Anton", dano: 5, speed: 1500, img: "", raridade: "raro" },
 
   // ---- Tier 2 -> epico ----
-  { id: "zhuyuan",  nome: "Zhu Yuan",  dano: 8, speed: 700,  img: "", raridade: "epico" },
-  { id: "caesar",   nome: "Caesar",    dano: 8, speed: 1000, img: "", raridade: "epico" },
-  { id: "lucy",     nome: "Lucy",      dano: 8, speed: 1500, img: "", raridade: "epico" },
-  { id: "soldier11",nome: "Soldier 11",dano: 8, speed: 700,  img: "", raridade: "epico" },
-  { id: "grace",    nome: "Grace",     dano: 8, speed: 700,  img: "", raridade: "epico" },
-  { id: "piper",    nome: "Piper",     dano: 8, speed: 700,  img: "", raridade: "epico" },
-  { id: "seth",     nome: "Seth",      dano: 8, speed: 1500, img: "", raridade: "epico" },
-  { id: "anby",     nome: "Anby",      dano: 8, speed: 1000, img: "", raridade: "epico" },
+  { id: "zhuyuan",   nome: "Zhu Yuan",   dano: 8, speed: 700,  img: "", raridade: "epico" },
+  { id: "caesar",    nome: "Caesar",     dano: 8, speed: 1000, img: "", raridade: "epico" },
+  { id: "lucy",      nome: "Lucy",       dano: 8, speed: 1500, img: "", raridade: "epico" },
+  { id: "soldier11", nome: "Soldier 11", dano: 8, speed: 700,  img: "", raridade: "epico" },
+  { id: "grace",     nome: "Grace",      dano: 8, speed: 700,  img: "", raridade: "epico" },
+  { id: "piper",     nome: "Piper",      dano: 8, speed: 700,  img: "", raridade: "epico" },
+  { id: "seth",      nome: "Seth",       dano: 8, speed: 1500, img: "", raridade: "epico" },
+  { id: "anby",      nome: "Anby",       dano: 8, speed: 1000, img: "", raridade: "epico" },
 
   // ---- Tier 1 -> lendario ----
-  { id: "yanagi",   nome: "Yanagi",   dano: 15, speed: 700,  img: "", raridade: "lendario" },
-  { id: "burnice",  nome: "Burnice",  dano: 15, speed: 700,  img: "", raridade: "lendario" },
-  { id: "ellen",    nome: "Ellen",    dano: 15, speed: 700,  img: "", raridade: "lendario" },
-  { id: "qingyi",   nome: "Qingyi",   dano: 15, speed: 1000, img: "", raridade: "lendario" },
-  { id: "manato",   nome: "Manato",   dano: 15, speed: 700,  img: "", raridade: "lendario" },
-  { id: "koleda",   nome: "Koleda",   dano: 15, speed: 1000, img: "", raridade: "lendario" },
-  { id: "rina",     nome: "Rina",     dano: 15, speed: 1500, img: "", raridade: "lendario" },
-  { id: "nicole",   nome: "Nicole",   dano: 15, speed: 1500, img: "", raridade: "lendario" },
-  { id: "harumasa", nome: "Harumasa", dano: 15, speed: 700,  img: "", raridade: "lendario" },
-  { id: "lycaon",   nome: "Lycaon",   dano: 15, speed: 1000, img: "", raridade: "lendario" },
-  { id: "nekomata", nome: "Nekomata", dano: 15, speed: 700,  img: "", raridade: "lendario" },
-  { id: "pulchra",  nome: "Pulchra",  dano: 15, speed: 1000, img: "", raridade: "lendario" },
-  { id: "soukaku",  nome: "Soukaku",  dano: 15, speed: 1500, img: "", raridade: "lendario" },
-  { id: "panyinhu", nome: "Pan Yinhu",dano: 15, speed: 1500, img: "", raridade: "lendario" },
+  { id: "yanagi",   nome: "Yanagi",    dano: 15, speed: 700,  img: "", raridade: "lendario" },
+  { id: "burnice",  nome: "Burnice",   dano: 15, speed: 700,  img: "", raridade: "lendario" },
+  { id: "ellen",    nome: "Ellen",     dano: 15, speed: 700,  img: "", raridade: "lendario" },
+  { id: "qingyi",   nome: "Qingyi",    dano: 15, speed: 1000, img: "", raridade: "lendario" },
+  { id: "manato",   nome: "Manato",    dano: 15, speed: 700,  img: "", raridade: "lendario" },
+  { id: "koleda",   nome: "Koleda",    dano: 15, speed: 1000, img: "", raridade: "lendario" },
+  { id: "rina",     nome: "Rina",      dano: 15, speed: 1500, img: "", raridade: "lendario" },
+  { id: "nicole",   nome: "Nicole",    dano: 15, speed: 1500, img: "", raridade: "lendario" },
+  { id: "harumasa", nome: "Harumasa",  dano: 15, speed: 700,  img: "", raridade: "lendario" },
+  { id: "lycaon",   nome: "Lycaon",    dano: 15, speed: 1000, img: "", raridade: "lendario" },
+  { id: "nekomata", nome: "Nekomata",  dano: 15, speed: 700,  img: "", raridade: "lendario" },
+  { id: "pulchra",  nome: "Pulchra",   dano: 15, speed: 1000, img: "", raridade: "lendario" },
+  { id: "soukaku",  nome: "Soukaku",   dano: 15, speed: 1500, img: "", raridade: "lendario" },
+  { id: "panyinhu", nome: "Pan Yinhu", dano: 15, speed: 1500, img: "", raridade: "lendario" },
 
   // ---- Tier 1+ -> mitico ----
   { id: "promeia",        nome: "Promeia",         dano: 30, speed: 700,  img: "", raridade: "mitico" },
@@ -83,31 +96,39 @@ const personagens = [
   { id: "hugo",           nome: "Hugo",            dano: 30, speed: 700,  img: "", raridade: "mitico" },
 
   // ---- Tier 0 -> secreto ----
-  { id: "remielle",  nome: "Remielle",     dano: 60, speed: 700,  img: "", raridade: "secreto" },
-  { id: "yeshunguang",nome: "Ye Shunguang",dano: 60, speed: 700,  img: "", raridade: "secreto" },
-  { id: "yixuan",    nome: "Yixuan",       dano: 60, speed: 700,  img: "", raridade: "secreto" },
-  { id: "miyabi",    nome: "Miyabi",       dano: 60, speed: 700,  img: "", raridade: "secreto" },
-  { id: "phoenix",   nome: "Phoenix",      dano: 60, speed: 700,  img: "", raridade: "secreto" },
-  { id: "yuzuha",    nome: "Yuzuha",       dano: 60, speed: 1500, img: "", raridade: "secreto" },
-  { id: "sunna",     nome: "Sunna",        dano: 60, speed: 1500, img: "", raridade: "secreto" },
-  { id: "lucia",     nome: "Lucia",        dano: 60, speed: 1500, img: "", raridade: "secreto" },
-  { id: "astra",     nome: "Astra",        dano: 60, speed: 1500, img: "", raridade: "secreto" },
-  { id: "dialyn",    nome: "Dialyn",       dano: 60, speed: 1000, img: "", raridade: "secreto" },
-  { id: "norma",     nome: "Norma",        dano: 60, speed: 1000, img: "", raridade: "secreto" },
-  { id: "nangongyu", nome: "Nangong Yu",   dano: 60, speed: 1000, img: "", raridade: "secreto" },
-  { id: "velina",    nome: "Velina",       dano: 60, speed: 700,  img: "", raridade: "secreto" },
-  { id: "claret",    nome: "Claret",       dano: 60, speed: 700,  img: "", raridade: "secreto" },
-  { id: "trigger",   nome: "Trigger",      dano: 60, speed: 1000, img: "", raridade: "secreto" },
+  { id: "remielle",    nome: "Remielle",     dano: 60, speed: 700,  img: "", raridade: "secreto" },
+  { id: "yeshunguang", nome: "Ye Shunguang", dano: 60, speed: 700,  img: "", raridade: "secreto" },
+  { id: "yixuan",      nome: "Yixuan",       dano: 60, speed: 700,  img: "", raridade: "secreto" },
+  { id: "miyabi",      nome: "Miyabi",       dano: 60, speed: 700,  img: "", raridade: "secreto" },
+  { id: "phoenix",     nome: "Phoenix",      dano: 60, speed: 700,  img: "", raridade: "secreto" },
+  { id: "yuzuha",      nome: "Yuzuha",       dano: 60, speed: 1500, img: "", raridade: "secreto" },
+  { id: "sunna",       nome: "Sunna",        dano: 60, speed: 1500, img: "", raridade: "secreto" },
+  { id: "lucia",       nome: "Lucia",        dano: 60, speed: 1500, img: "", raridade: "secreto" },
+  { id: "astra",       nome: "Astra",        dano: 60, speed: 1500, img: "", raridade: "secreto" },
+  { id: "dialyn",      nome: "Dialyn",       dano: 60, speed: 1000, img: "", raridade: "secreto" },
+  { id: "norma",       nome: "Norma",        dano: 60, speed: 1000, img: "", raridade: "secreto" },
+  { id: "nangongyu",   nome: "Nangong Yu",   dano: 60, speed: 1000, img: "", raridade: "secreto" },
+  { id: "velina",      nome: "Velina",       dano: 60, speed: 700,  img: "", raridade: "secreto" },
+  { id: "claret",      nome: "Claret",       dano: 60, speed: 700,  img: "", raridade: "secreto" },
+  { id: "trigger",     nome: "Trigger",      dano: 60, speed: 1000, img: "", raridade: "secreto" },
 ];
 
 function setPersonagemAtual(id) {
-  if (!estaDesbloqueadoPers(id)) return;
+  if (!estaDesbloqueadoPers(id)) return; // nao deixa escolher um personagem bloqueado
   state.personagemAtual = id;
 }
 
 function getPersonagem() {
-  return personagens.find(p => p.id === state.personagemAtual);
+  return personagens.find(personagem => personagem.id === state.personagemAtual);
 }
+
+// ---------- bangboos ----------
+// funcionam como buffs. os stats que nao estiverem escritos contam como 0:
+//   dano        -> +% de dano            (0.10 = +10%)
+//   crit        -> + chance de critico   (0.03 = +3%)
+//   tempoBoss   -> + segundos no boss
+//   velocidade  -> +% velocidade de ataque (0.10 = ataques 10% mais rapidos)
+//   dropPremium -> + chance de drop de premium (0.01 = +1%)
 
 const bangboos = [
   // ---- Tier 3 -> comum ----
@@ -161,12 +182,15 @@ const bangboos = [
 ];
 
 function setBangbooAtual(id) {
-  if (!estaDesbloqueadoBangboo(id)) return;
+  if (!estaDesbloqueadoBangboo(id)) return; // nao deixa escolher um bangboo bloqueado
   state.bangbooAtual = id;
 }
 
+// devolve undefined se nao houver bangboo equipado (por isso usamos getBangboo()?.stat || 0)
 function getBangboo() {
-  return bangboos.find(b => b.id === state.bangbooAtual);
+  return bangboos.find(bangboo => bangboo.id === state.bangbooAtual);
 }
 
-const abas = ["upgrades garantidos", "bangboos gamble", "gamble personagem", "achievements"];
+// ---------- separadores da loja ----------
+// a ordem daqui e a ordem usada em desenharAbas() (loja.js)
+const abas = ["upgrades garantidos", "gamble personagem", "bangboos gamble", "achievements"];

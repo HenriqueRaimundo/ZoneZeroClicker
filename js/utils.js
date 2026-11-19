@@ -1,24 +1,31 @@
 // funcoes pequenas que sao usadas em todo o lado
-const sufixos = ["", "K", "M", "B", "T", "Qa", "Qi"];
-
-// 1500 -> 1.50K, 2000000 -> 2.00M
-function fmt(n) {
-  if (n < 1000) return n < 10 && n % 1 ? n.toFixed(1) : Math.floor(n).toString();
-  const i = Math.min(Math.floor(Math.log10(n) / 3), sufixos.length - 1);
-  return (n / Math.pow(1000, i)).toFixed(2) + sufixos[i];
-}
 
 // atalho para nao escrever document.getElementById sempre
-const $ = id => document.getElementById(id);
+const porId = id => document.getElementById(id);
 
-// numero que sobe e desaparece
-function flutuante(texto, x, y, cor = "#000") {
-  const el = document.createElement("div");
-  el.className = "flutuante";
-  el.textContent = texto;
-  el.style.color = cor;
-  el.style.left = x + "px";
-  el.style.top = y + "px";
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 1000);
+const sufixosNumeros = ["", "K", "M", "B", "T", "Qa", "Qi"];
+
+// formata numeros grandes: 1500 -> 1.50K, 2000000 -> 2.00M
+function formatarNumero(numero) {
+  if (numero < 1000) {
+    return numero < 10 && numero % 1 ? numero.toFixed(1) : Math.floor(numero).toString();
+  }
+
+  // cada sufixo representa 3 zeros (K = 10^3, M = 10^6, B = 10^9...)
+  const posicaoSufixo = Math.min(Math.floor(Math.log10(numero) / 3), sufixosNumeros.length - 1);
+  return (numero / Math.pow(1000, posicaoSufixo)).toFixed(2) + sufixosNumeros[posicaoSufixo];
+}
+
+// texto que sobe e desaparece ao fim de 1 segundo (dano, dinheiro, avisos)
+// a animacao em si esta no CSS, na classe "flutuante"
+function flutuante(texto, posicaoX, posicaoY, cor = "#000") {
+  const elemento = document.createElement("div");
+  elemento.className = "flutuante";
+  elemento.textContent = texto;
+  elemento.style.color = cor;
+  elemento.style.left = posicaoX + "px";
+  elemento.style.top = posicaoY + "px";
+  document.body.appendChild(elemento);
+  
+  setTimeout(() => elemento.remove(), 1000);
 }

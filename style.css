@@ -47,3 +47,34 @@ button.ativo, button.ativo:disabled { background: #000; color: #fff; border-colo
 #zonas small { font-size: 11px; }
 
 #btnReset { position: fixed; right: 8px; bottom: 8px; z-index: 20; font-size: 12px; }
+
+.conq-topo { margin-bottom: 14px; }
+.conq-topo-texto { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.conq-barra { height: 8px; border-radius: 4px; background: rgba(128,128,128,.25); overflow: hidden; }
+.conq-barra div { height: 100%; background: #3a9d5d; transition: width .3s; }
+
+.conq-grupo { margin-bottom: 16px; }
+.conq-grupo h3 {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin: 0 0 6px; font-size: 14px; text-transform: uppercase; letter-spacing: .05em; opacity: .8;
+}
+.conq-grupo h3 small { font-weight: normal; }
+
+.conq {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; margin-bottom: 4px;
+  border: 1px solid rgba(128,128,128,.3); border-radius: 6px; opacity: .65;
+}
+.conq.feita { opacity: 1; border-color: #3a9d5d; background: rgba(58,157,93,.08); }
+.conq-nome { flex: 1; }
+.conq-premio { font-size: 12px; opacity: .7; white-space: nowrap; }
+
+.conq-caixa {
+  position: relative; flex: 0 0 20px; height: 20px; box-sizing: border-box;
+  border: 2px solid rgba(128,128,128,.6); border-radius: 4px;
+}
+.conq.feita .conq-caixa { background: #3a9d5d; border-color: #3a9d5d; }
+.conq.feita .conq-caixa::after {
+  content: ""; position: absolute; left: 5px; top: 1px; width: 5px; height: 10px;
+  border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
