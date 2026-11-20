@@ -221,8 +221,8 @@ function desenharConquistas(container) {
       return `
         <div class="conq ${foiObtida ? "feita" : ""}">
           <span class="conq-caixa"></span>
-          <span class="conq-nome">${c.nome}</span>
-          <span class="conq-premio">+${c.premio} premium</span>
+          <span class="conq-nome">${conquista.nome}</span>
+          <span class="conq-premio">+${conquista.premio} premium</span>
         </div>`;
     }).join("");
     
